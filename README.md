@@ -6,6 +6,10 @@ FIXME: description
 
 Download from http://example.com/FIXME.
 
+Compile from source
+
+    $ lein uberjar
+
 ## Usage
 
 FIXME: explanation
