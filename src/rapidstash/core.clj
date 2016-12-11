@@ -34,32 +34,36 @@
         nil))
     (catch Exception e nil)))
 
-(defn get-action
-  "returns the db action/command of the parsed json"
-  [obj]
-  (clojure.string/lower-case (nth (nth (seq obj) 0) 0)))
+(defn get-actionname
+  "returns the name of the action"
+  [action]
+  (nth action 0))
 
-(defn get-actionvalue
-  "returns the value of the action passed in"
+(defn get-actionval
+  "returns the value of the action"
+  [action]
+  (nth action 1))
+
+(defn get-action
+  "returns the name of the action/command of the parsed json"
   [obj]
-  (nth (nth (seq obj) 0) 1))
+  (nth (seq obj) 0))
 
 (defn valid-action?
   "returns true if the action/command is valid"
-  [obj]
-  (let [action (get-action obj)]
-    (if (in? actions (get-action obj))
-      true
-      false)))
+  [action]
+  (if (in? actions (get-actionname action))
+    true
+    false))
 
 (defn do-action
   "performs the action from the parsed json.  note: lazy validation of rest of obj"
-  [obj]
-  (let [action (get-action obj) actionval (get-actionvalue obj)]
+  [action]
+  (let [actionname (get-actionname action) actionval (get-actionval action)]
     (cond
-      (= action "insert") (rs-insert actionval)
-      (= action "lookup") (rs-lookup actionval)
-      (= action "index") (rs-index actionval)
+      (= actionname "insert") (rs-insert actionval)
+      (= actionname "lookup") (rs-lookup actionval)
+      (= actionname "index") (rs-index actionval)
       :else nil)))
 
 (defn -main
@@ -76,9 +80,10 @@
             (do
               (println "You entered:")
               (println (generate-string obj {:pretty true}))
-              (if (valid-action? obj)
-                (do-action obj)
-                (println "Invalid action!")))
+              (let [action (get-action obj)]
+                (if (valid-action? action)
+                  (do-action action)
+                  (println "Invalid action!"))))
             (println "Invalid statement!")))
         (print "rs> ")
         (flush)
