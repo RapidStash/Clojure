@@ -1,18 +1,38 @@
 (ns rapidstash.core
   (:gen-class)
-  (:require [cheshire.core :refer :all]))
+  (:require [cheshire.core :refer :all])
+)
+
+(use 'clojure.set)
 
 (def actions (list "insert","lookup","index"))
+
+(def the-data #{})
 
 (defn rs-insert
   "performs insert operation"
   [obj]
-  (println "INSERT" obj))
+  (println "INSERT" obj)
+  
+  (def the-data (union the-data (set obj)))
+)
 
 (defn rs-lookup
   "performs lookup operation"
   [obj]
-  (println "LOOKUP" obj))
+  (println "LOOKUP" obj)
+  (println the-data)
+  (def result 
+    (select
+      (fn [x]
+        (= (key x) obj)
+      )
+      the-data
+    )
+  )
+  (println result)
+)
+
 
 (defn rs-index
   "performs index operation"
@@ -42,12 +62,14 @@
 (defn get-actionval
   "returns the value of the action"
   [action]
-  (nth action 1))
+(nth action 1)
+)
 
 (defn get-action
   "returns the name of the action/command of the parsed json"
   [obj]
   (nth (seq obj) 0))
+  
 
 (defn valid-action?
   "returns true if the action/command is valid"
@@ -58,12 +80,12 @@
 
 (defn do-action
   "performs the action from the parsed json.  note: lazy validation of rest of obj"
-  [action]
+  [action obj]
   (let [actionname (get-actionname action) actionval (get-actionval action)]
     (cond
-      (= actionname "insert") (rs-insert actionval)
-      (= actionname "lookup") (rs-lookup actionval)
-      (= actionname "index") (rs-index actionval)
+      (= actionname "insert") (rs-insert  (get obj "insert"))
+      (= actionname "lookup") (rs-lookup  (get obj "lookup"))
+      (= actionname "index")  (rs-index   (get obj "index"))
       :else nil)))
 
 (defn -main
@@ -82,7 +104,7 @@
               (println (generate-string obj {:pretty true}))
               (let [action (get-action obj)]
                 (if (valid-action? action)
-                  (do-action action)
+                  (do-action action obj)
                   (println "Invalid action!"))))
             (println "Invalid statement!")))
         (print "rs> ")
