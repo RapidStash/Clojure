@@ -53,6 +53,8 @@
           (let [docKey (first kv) docVal (get d docKey) clauseVal (second kv)]
             (and
               (not (nil? docKey))
+              (not (nil? docVal))
+              (not (nil? clauseVal))
               (instance? (type docVal) clauseVal)
               (= docVal clauseVal))))
         temp-data))))
