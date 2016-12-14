@@ -3,8 +3,6 @@
   (:require [cheshire.core :refer :all])
 )
 
-(use 'clojure.set)
-
 (def actions (list "insert","lookup","index"))
 (def the-data (list))
 
@@ -17,14 +15,12 @@
       )
     )
   )
-  (println (count data) "results returned")
-)
+  (println (count data) "results returned"))
 
 (defn rs-insert
   "performs insert operation"
   [obj]
-  (def the-data (conj the-data obj))
-)
+  (def the-data (conj the-data obj)))
 
 (defn matching-document
   [document,condition]
@@ -33,9 +29,7 @@
     (nil? document) false
     (= (count document) 0) false
     (= (first document) (first condition)) (println "yay")
-    :else (matching-document (rest document) condition)
-  )
-)
+    :else (matching-document (rest document) condition)))
 
 (defn rs-lookup
   "performs lookup operation"
@@ -48,7 +42,7 @@
     (doseq [kv condition]
       (def temp-data (filter
         (fn [d]
-          (matching-document d kv)
+          ;(matching-document d kv)
           ; TODO: this only works for non-nested documents.  Needs extra logic for recursive comparison of arrays/maps
           (let [docKey (first kv) docVal (get d docKey) clauseVal (second kv)]
             (and
@@ -59,7 +53,6 @@
               (= docVal clauseVal))))
         temp-data))))
   temp-data)
-
 
 (defn rs-index
   "performs index operation"
@@ -111,12 +104,10 @@
       (= actionname "index")  (rs-index   (get obj actionname))
       :else nil)))
 
-
 (defn continue-loop?
   "test to see if we need to continue"
   [msg]
-  (not (= (clojure.string/lower-case msg) "exit"))
-)
+  (not (= (clojure.string/lower-case msg) "exit")))
 
 (defn -main
   "entry point into console application"
@@ -126,31 +117,20 @@
   (loop [ln (read-line)]
     (if (continue-loop? ln)
       (do 
-        "perform action on the input and continue"
+        ; perform action on the input and continue
         (let [obj (trivial-validate ln)]
           (if (not (nil? obj))
             (do
               (println "You entered:")
               (println (generate-string obj {:pretty true}))
-
-              "perform the query"
+              ; perform the query
               (let [actions (get-action obj)]
                 (doseq [action actions]
                   (if (valid-action? action)
                     (do-action action obj)
-                    (println "Invalid action!")
-                  )
-                )
-              )
-
-            )
-            (println "Invalid statement!")
-          )
-        )
+                    (println "Invalid action!")))))
+            (println "Invalid statement!")))
         (print "rs> ")
         (flush)
         (recur (read-line)))
-      (println "Goodbye!")
-    )
-  )
-)
+      (println "Goodbye!"))))
