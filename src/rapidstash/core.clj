@@ -50,16 +50,13 @@
         (fn [d]
           (matching-document d kv)
           ; TODO: this only works for non-nested documents.  Needs extra logic for recursive comparison of arrays/maps
-          (== (get d (first kv)) (second kv))
-        )
-        temp-data
-        )
-      )
-    )
-  )
-
-  (display-data temp-data)
-)
+          (let [docKey (first kv) docVal (get d docKey) clauseVal (second kv)]
+            (and
+              (not (nil? docKey))
+              (instance? (type docVal) clauseVal)
+              (= docVal clauseVal))))
+        temp-data))))
+  temp-data)
 
 
 (defn rs-index
@@ -108,7 +105,7 @@
   (let [actionname (get-actionname action)]
     (cond
       (= actionname "insert") (rs-insert  (get obj actionname))
-      (= actionname "lookup") (rs-lookup  (get obj actionname))
+      (= actionname "lookup") (println (rs-lookup  (get obj actionname)))
       (= actionname "index")  (rs-index   (get obj actionname))
       :else nil)))
 
