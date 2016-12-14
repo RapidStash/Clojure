@@ -7,31 +7,28 @@
 
 (def actions (list "insert","lookup","index"))
 
-(def the-data #{})
+(def the-data (list))
 
 (defn rs-insert
   "performs insert operation"
   [obj]
   (println "INSERT" obj)
-  
-  (def the-data (union the-data (set obj)))
-)
+  (def the-data (conj the-data obj))
+  (println "data: " the-data))
 
 (defn rs-lookup
   "performs lookup operation"
   [obj]
   (println "LOOKUP" obj)
-  (println the-data)
-  (def result 
-    (select
-      (fn [x]
-        (= (key x) obj)
-      )
-      the-data
-    )
-  )
-  (println result)
-)
+  (def temp-data the-data)
+  (let [s (seq obj)]
+    (doseq [kv s]
+      (def temp-data (filter
+        (fn [d]
+          ; TODO: this only works for non-nested documents.  Needs extra logic for recursive comparison of arrays/maps
+          (== (get d (first kv)) (second kv)))
+        temp-data))))
+  (println temp-data))
 
 
 (defn rs-index
@@ -59,17 +56,13 @@
   [action]
   (nth action 0))
 
-(defn get-actionval
-  "returns the value of the action"
-  [action]
-(nth action 1)
-)
-
 (defn get-action
   "returns the name of the action/command of the parsed json"
   [obj]
-  (nth (seq obj) 0))
-  
+  (filter
+    (fn [k]
+       (in? actions (first k)))
+    (seq obj)))
 
 (defn valid-action?
   "returns true if the action/command is valid"
@@ -81,11 +74,11 @@
 (defn do-action
   "performs the action from the parsed json.  note: lazy validation of rest of obj"
   [action obj]
-  (let [actionname (get-actionname action) actionval (get-actionval action)]
+  (let [actionname (get-actionname action)]
     (cond
-      (= actionname "insert") (rs-insert  (get obj "insert"))
-      (= actionname "lookup") (rs-lookup  (get obj "lookup"))
-      (= actionname "index")  (rs-index   (get obj "index"))
+      (= actionname "insert") (rs-insert  (get obj actionname))
+      (= actionname "lookup") (rs-lookup  (get obj actionname))
+      (= actionname "index")  (rs-index   (get obj actionname))
       :else nil)))
 
 (defn -main
@@ -102,10 +95,11 @@
             (do
               (println "You entered:")
               (println (generate-string obj {:pretty true}))
-              (let [action (get-action obj)]
-                (if (valid-action? action)
-                  (do-action action obj)
-                  (println "Invalid action!"))))
+              (let [actions (get-action obj)]
+                (doseq [action actions]
+                  (if (valid-action? action)
+                    (do-action action obj)
+                    (println "Invalid action!")))))
             (println "Invalid statement!")))
         (print "rs> ")
         (flush)
