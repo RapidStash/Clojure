@@ -41,17 +41,37 @@
       (= op "#eq") (= docVal clauseVal)
       :else false)))
 
+(defn is-map?
+  [x]
+  (or 
+        (instance? clojure.lang.PersistentArrayMap x) 
+        (instance? clojure.lang.PersistentVector$ChunkedSeq x)
+  )
+)
+
+; recursively try to 
 (defn matchesClause?
   [clause doc]
   (def clauseVal clause)
   (def docVal doc)
-  (if (or (instance? clojure.lang.PersistentArrayMap clauseVal) (instance? clojure.lang.PersistentVector$ChunkedSeq clauseVal))
-    (def clauseVal (first (seq clauseVal))))
-  (if (or (instance? clojure.lang.PersistentArrayMap docVal) (instance? clojure.lang.PersistentVector$ChunkedSeq docVal))
-    (def docVal (first (seq docVal))))
+  
+  ; idk
+  (if (is-map? clauseVal)
+    (def clauseVal (first (seq clauseVal)))
+  )
+  
+  ; idk
+  (if (is-map? docVal)
+    (def docVal (first (seq docVal)))
+  )
+  
+  ;
   (cond
+    ; operator
     (isOp? (first clauseVal)) (opMatchesDoc? clauseVal docVal)
+    ; non-matching attribute
     (not (= (first clauseVal) (first docVal))) false
+    ; 
     :else (matchesClause? (second clauseVal) (second docVal))))
 
 (defn rs-lookup
@@ -60,11 +80,12 @@
   (println "LOOKUP" conditions)
   (def temp-data the-data)
 
-  "go over each condition and apply it to the data"
+  "go over each condition and use it to filter the results"
   (let [condition (seq conditions)]
     (doseq [kv condition]
       (def temp-data (filter
         (fn [d]
+          "we take this document and verify it against the condtion"
           (let [clauseKey (first kv) clauseVal (second kv) docVal (get d clauseKey)]
             (and
               (not (nil? clauseKey))
