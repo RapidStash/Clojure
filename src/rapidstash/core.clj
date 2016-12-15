@@ -4,7 +4,13 @@
 )
 
 (def actions (list "insert","lookup","index"))
+(def ops (list "#gt","#lt","#eq"))
 (def the-data (list))
+
+(defn in? 
+  "true if coll contains elm"
+  [coll elm]  
+  (some #(= elm %) coll))
 
 (defn display-data
   [data]
@@ -31,6 +37,32 @@
     (= (first document) (first condition)) (println "yay")
     :else (matching-document (rest document) condition)))
 
+(defn isOp?
+  [op]
+  (in? ops op))
+
+(defn opMatchesDoc?
+  [opAndVal docVal]
+  (let [op (first opAndVal) clauseVal (second opAndVal)]
+    (cond
+      (= op "#gt") (> docVal clauseVal)
+      (= op "#lt") (< docVal clauseVal)
+      (= op "#eq") (= docVal clauseVal)
+      :else false)))
+
+(defn matchesClause?
+  [clause doc]
+  (def clauseVal clause)
+  (def docVal doc)
+  (if (or (instance? clojure.lang.PersistentArrayMap clauseVal) (instance? clojure.lang.PersistentVector$ChunkedSeq clauseVal))
+    (def clauseVal (first (seq clauseVal))))
+  (if (or (instance? clojure.lang.PersistentArrayMap docVal) (instance? clojure.lang.PersistentVector$ChunkedSeq docVal))
+    (def docVal (first (seq docVal))))
+  (cond
+    (isOp? (first clauseVal)) (opMatchesDoc? clauseVal docVal)
+    (not (= (first clauseVal) (first docVal))) false
+    :else (matchesClause? (second clauseVal) (second docVal))))
+
 (defn rs-lookup
   "performs lookup operation"
   [conditions]
@@ -42,15 +74,13 @@
     (doseq [kv condition]
       (def temp-data (filter
         (fn [d]
-          ;(matching-document d kv)
-          ; TODO: this only works for non-nested documents.  Needs extra logic for recursive comparison of arrays/maps
-          (let [docKey (first kv) docVal (get d docKey) clauseVal (second kv)]
+          (let [clauseKey (first kv) clauseVal (second kv) docVal (get d clauseKey)]
             (and
-              (not (nil? docKey))
-              (not (nil? docVal))
+              (not (nil? clauseKey))
               (not (nil? clauseVal))
+              (not (nil? docVal))
               (instance? (type docVal) clauseVal)
-              (= docVal clauseVal))))
+              (matchesClause? clauseVal docVal))))
         temp-data))))
   temp-data)
 
@@ -58,11 +88,6 @@
   "performs index operation"
   [obj]
   (println "INDEX" obj))
-
-(defn in? 
-  "true if coll contains elm"
-  [coll elm]  
-  (some #(= elm %) coll))
 
 (defn trivial-validate
   "returns parsed json or nil if parsing fails or the parsed value is not the correct type"
@@ -107,21 +132,21 @@
 (defn continue-loop?
   "test to see if we need to continue"
   [msg]
-  (not (= (clojure.string/lower-case msg) "exit")))
+  (and (not (nil? msg)) (not (= (clojure.string/lower-case msg) "exit"))))
 
 (defn -main
   "entry point into console application"
   [& args]
   (print "rs ('exit' to quit)> ")
   (flush)
-  (loop [ln (read-line)]
+  (loop [reader (java.io.BufferedReader. *in*) ln (.readLine reader)]
     (if (continue-loop? ln)
       (do 
         ; perform action on the input and continue
         (let [obj (trivial-validate ln)]
           (if (not (nil? obj))
             (do
-              (println "You entered:")
+              (println "Input:")
               (println (generate-string obj {:pretty true}))
               ; perform the query
               (let [actions (get-action obj)]
@@ -132,5 +157,5 @@
             (println "Invalid statement!")))
         (print "rs> ")
         (flush)
-        (recur (read-line)))
+        (recur reader (.readLine reader)))
       (println "Goodbye!"))))
