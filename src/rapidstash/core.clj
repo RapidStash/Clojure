@@ -36,9 +36,10 @@
   [opAndVal docVal]
   (let [op (first opAndVal) clauseVal (second opAndVal)]
     (cond
-      (= op "#gt") (> docVal clauseVal)
-      (= op "#lt") (< docVal clauseVal)
-      (= op "#eq") (= docVal clauseVal)
+      (not (instance? (type docVal) (clauseVal))) false
+      (= op "#gt") (> (compare docVal clauseVal) 0)
+      (= op "#lt") (< (compare docVal clauseVal) 0)
+      (= op "#eq") (= (compare docVal clauseVal) 0)
       :else false)))
 
 (defn is-map?
