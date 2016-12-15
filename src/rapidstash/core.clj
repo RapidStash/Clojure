@@ -28,15 +28,6 @@
   [obj]
   (def the-data (conj the-data obj)))
 
-(defn matching-document
-  [document,condition]
-  (println "document:" document "condition:" condition)
-  (cond
-    (nil? document) false
-    (= (count document) 0) false
-    (= (first document) (first condition)) (println "yay")
-    :else (matching-document (rest document) condition)))
-
 (defn isOp?
   [op]
   (in? ops op))
