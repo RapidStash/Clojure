@@ -36,7 +36,7 @@
   [opAndVal docVal]
   (let [op (first opAndVal) clauseVal (second opAndVal)]
     (cond
-      (not (instance? (type docVal) (clauseVal))) false
+      (not (instance? (type docVal) clauseVal)) false
       (= op "#gt") (> (compare docVal clauseVal) 0)
       (= op "#lt") (< (compare docVal clauseVal) 0)
       (= op "#eq") (= (compare docVal clauseVal) 0)
@@ -65,9 +65,11 @@
   (if (is-map? docVal)
     (def docVal (first (seq docVal)))
   )
-  
+
   ;
   (cond
+    ; simple matching
+    (and (not (instance? clojure.lang.MapEntry clauseVal)) (not (instance? clojure.lang.MapEntry docVal))) (= clauseVal docVal)
     ; operator
     (isOp? (first clauseVal)) (opMatchesDoc? clauseVal docVal)
     ; non-matching attribute
