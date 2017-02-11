@@ -1,10 +1,13 @@
 (ns rapidstash.core
   (:gen-class)
   (:require [cheshire.core :refer :all])
+  (:require [clj-mmap :as mmap])
 )
 
+(load "storage")
+
 (def actions (list "insert","lookup","index"))
-(def ops (list "#gt","#lt","#eq"))
+(def ops (list "#gt","#lt","#eq","#in?"))
 (def the-data (list))
 
 (defn in? 
@@ -36,19 +39,18 @@
   [opAndVal docVal]
   (let [op (first opAndVal) clauseVal (second opAndVal)]
     (cond
-      (not (instance? (type docVal) clauseVal)) false
+      ;(not (instance? (type docVal) clauseVal)) false
       (= op "#gt") (> (compare docVal clauseVal) 0)
       (= op "#lt") (< (compare docVal clauseVal) 0)
       (= op "#eq") (= (compare docVal clauseVal) 0)
+      (= op "#in?") (println "doc: " docVal "clause: " clauseVal)
       :else false)))
 
 (defn is-map?
   [x]
-  (or 
-        (instance? clojure.lang.PersistentArrayMap x) 
-        (instance? clojure.lang.PersistentVector$ChunkedSeq x)
-  )
-)
+  (or
+    (instance? clojure.lang.PersistentArrayMap x) 
+    (instance? clojure.lang.PersistentVector$ChunkedSeq x)))
 
 ; recursively try to 
 (defn matchesClause?
@@ -56,26 +58,21 @@
   (def clauseVal clause)
   (def docVal doc)
   
-  ; idk
   (if (is-map? clauseVal)
-    (def clauseVal (first (seq clauseVal)))
-  )
+    (def clauseVal (first (seq clauseVal))))
   
-  ; idk
   (if (is-map? docVal)
-    (def docVal (first (seq docVal)))
-  )
+    (def docVal (first (seq docVal))))
 
-  ;
   (cond
     ; simple matching
-    (and (not (instance? clojure.lang.MapEntry clauseVal)) (not (instance? clojure.lang.MapEntry docVal))) (= clauseVal docVal)
+    (and (not (instance? clojure.lang.MapEntry clauseVal)) (not (instance? clojure.lang.MapEntry docVal))) (do (println "---Checking equality---") (= clauseVal docVal))
     ; operator
-    (isOp? (first clauseVal)) (opMatchesDoc? clauseVal docVal)
+    (isOp? (first clauseVal)) (do (println "---Checking op---") (opMatchesDoc? clauseVal docVal))
     ; non-matching attribute
-    (not (= (first clauseVal) (first docVal))) false
+    (not (= (first clauseVal) (first docVal))) (do (println "---Checking keys match---") false)
     ; 
-    :else (matchesClause? (second clauseVal) (second docVal))))
+    :else (do (println "---Checking clause---") (matchesClause? (second clauseVal) (second docVal)))))
 
 (defn rs-lookup
   "performs lookup operation"
@@ -94,7 +91,7 @@
               (not (nil? clauseKey))
               (not (nil? clauseVal))
               (not (nil? docVal))
-              (instance? (type docVal) clauseVal)
+              ;(instance? (type docVal) clauseVal)
               (matchesClause? clauseVal docVal))))
         temp-data))))
   temp-data)
