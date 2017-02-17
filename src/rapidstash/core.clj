@@ -1,7 +1,8 @@
 (ns rapidstash.core
   (:gen-class)
   (:require [cheshire.core :refer :all])
-  (:require [clj-mmap :as mmap])
+  (:require [clj-mmap :as mmap :refer :all])
+  (:require [clojurewerkz.buffy.core :as buffy :refer :all])
 )
 
 (load "storage")
@@ -149,6 +150,7 @@
 (defn -main
   "entry point into console application"
   [& args]
+  (newCollection "testFile")
   (print "rs ('exit' to quit)> ")
   (flush)
   (loop [reader (java.io.BufferedReader. *in*) ln (.readLine reader)]
