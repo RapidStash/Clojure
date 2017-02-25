@@ -150,7 +150,7 @@
 (defn -main
   "entry point into console application"
   [& args]
-  (newCollection "testFile")
+  (openCollection "testFile")
   (print "rs ('exit' to quit)> ")
   (flush)
   (loop [reader (java.io.BufferedReader. *in*) ln (.readLine reader)]
