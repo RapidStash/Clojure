@@ -15,7 +15,7 @@
 
 (def frameHeaderSize (getSpecSize frameHeader))
 
-(def frameData (spec :data (string-type (- frameSize (getSpecSize frameHeader)))))
+(def frameData (spec :data (string-type (- frameSize frameHeaderSize))))
 
 (def frameDataSize (getSpecSize frameData))
 
@@ -60,6 +60,14 @@
    "Read the header from the collection file"
    (readBuffer file 0 collectionHeader))
 
+(defn createFrameBuffer
+   [nextFrame docId data]
+   (def buf (compose-buffer frame))
+   (set-field buf :nextFrame nextFrame)
+   (set-field buf :docId docId)
+   (set-field buf :data data)
+   buf) 
+
 (defn openCollection
    "open a collection and return the memory map"
    [collName]
@@ -72,4 +80,12 @@
    (if (= newCollection? true)
       (writeCollectionHeader file 0 0))
    (def collectionHeader (readCollectionHeader file))
+   (println "Collection header")
+   (println (decompose collectionHeader))
+   (println "Writing two frames")
+   (writeBuffer file (createFrameBuffer -1 "abc123" "Hello, World!") (getFramePosition 0))
+   (writeBuffer file (createFrameBuffer -1 "abc124" "Herp Derp") (getFramePosition 1))
+   (println "Reading the frames")
+   (println (decompose (readBuffer file (getFramePosition 0) frame)))
+   (println (decompose (readBuffer file (getFramePosition 1) frame)))
    file)

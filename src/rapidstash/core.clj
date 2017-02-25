@@ -148,9 +148,13 @@
   (and (not (nil? msg)) (not (= (clojure.string/lower-case msg) "exit"))))
 
 (defn -main
+  "testing storage system"
+  [& args]
+  (openCollection "testFile"))
+
+(defn -oldmain
   "entry point into console application"
   [& args]
-  (openCollection "testFile")
   (print "rs ('exit' to quit)> ")
   (flush)
   (loop [reader (java.io.BufferedReader. *in*) ln (.readLine reader)]
