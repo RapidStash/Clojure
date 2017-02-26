@@ -1,8 +1,10 @@
 (in-ns 'rapidstash.core)
 (import '[java.io RandomAccessFile])
 
+(def mapSize (* 1024 1024 1024 4))
 (def frameSize 2048)
-(def collectionHeader (atom nil))
+(def collectionHeader nil)
+
 (defn getSpecSize [s] (.capacity (.buffer (compose-buffer s))))
 
 (def collectionHeader (spec :freeSpot (int32-type)
@@ -23,13 +25,23 @@
 
 (defn getFramePosition 
    [frameId] 
+   "gets the file offset of the frame from the given frame Id"
    (+ collectionHeaderSize (* frameId frameSize)))
 
+(defn getNextFreeSpot
+   []
+   "gets the next free frame Id and increments the nextSpot by 1"
+   (def value 0)
+   (locking collectionHeader 
+      (def value (get-field collectionHeader :freeSpot))
+      (set-field collectionHeader :freeSpot (+ value 1)))
+   value)
+
 (defn createLargeFile
-   "creates a 2gb file that can be immmediately mapped"
    [filename]
+   "creates a file that can be immmediately mapped"
    (doto (RandomAccessFile. filename "rw")
-      (.seek (* 1024 1024 1024 2))
+      (.seek mapSize)
       (.writeInt 0)
       (.close)))
 
@@ -83,8 +95,9 @@
    (println "Collection header")
    (println (decompose collectionHeader))
    (println "Writing two frames")
-   (writeBuffer file (createFrameBuffer -1 "abc123" "Hello, World!") (getFramePosition 0))
-   (writeBuffer file (createFrameBuffer -1 "abc124" "Herp Derp") (getFramePosition 1))
+   (writeBuffer file (createFrameBuffer -1 "abc123" "Hello, World!") (getFramePosition (getNextFreeSpot)))
+   (writeBuffer file (createFrameBuffer -1 "abc124" "Herp Derp") (getFramePosition (getNextFreeSpot)))
+   (writeBuffer file (createFrameBuffer -1 "abc123" "Hello, World! This is a large amount of data.") (getFramePosition 0))
    (println "Reading the frames")
    (println (decompose (readBuffer file (getFramePosition 0) frame)))
    (println (decompose (readBuffer file (getFramePosition 1) frame)))
